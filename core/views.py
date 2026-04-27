@@ -1,10 +1,24 @@
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render,redirect
 from .models import Todo, User
 
 
 def create_todo(request):
-    return HttpResponse("Create a new todo")
+    if request.method == "POST":
+        title = request.POST.get("title")
+        description = request.POST.get("description")
+
+        user = User.objects.first()
+
+        Todo.objects.create(
+            title=title,
+            description=description,
+            user=user
+        )
+
+        return HttpResponse("Todo Created Successfully")
+
+    return render(request, "create.html")
 
 
 def get_todos(request):
@@ -19,14 +33,12 @@ def get_todos(request):
                 "user": todo.user.username,
             }
         )
-    print(newtodos)
+
     return render(request, "index.html", {"todo_lists": newtodos})
 
 
 def get_todo_by_id(request, todo_id):
-    find_todo = Todo.objects.get(pk=todo_id)
-    if not find_todo:
-        return HttpResponse("Todo not found", status=404)
+    find_todo = get_object_or_404(Todo, pk=todo_id)
     return render(request, "detail.html", {"todo": find_todo})
 
 
@@ -34,5 +46,9 @@ def update_todo(request):
     return HttpResponse("Update a todo")
 
 
-def delelte_todo(request):
-    return HttpResponse("Delete a todo")
+def delete_todo(request, todo_id):
+    if request.method == "POST":
+        todo = get_object_or_404(Todo, pk=todo_id)
+        todo.delete()
+        return redirect("core:get_todos")
+        return HttpResponse("Invalid request", status=400)
